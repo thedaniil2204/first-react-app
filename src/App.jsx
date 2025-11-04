@@ -7,12 +7,21 @@ const API_BASE_URL = 'https://api.themoviedb.org/3';
 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
+// Поддержка двух вариантов авторизации TMDB:
+// - v4 токен (JWT) через заголовок Authorization: Bearer <token>
+// - v3 ключ через параметр ?api_key=...
+const isBearerToken = typeof API_KEY === 'string' && API_KEY.includes('.');
+
 const API_OPTIONS = {
   method: "GET",
-  headers: {
-    accept: "application/json",
-    Authorization: `Bearer ${API_KEY}`
-  }
+  headers: isBearerToken
+    ? {
+        accept: "application/json",
+        Authorization: `Bearer ${API_KEY}`
+      }
+    : {
+        accept: "application/json"
+      }
 }
 
 const App = () => {
@@ -28,9 +37,14 @@ const App = () => {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const endpoint = query
-      ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
-      : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`
+      let endpoint = query
+        ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
+        : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+
+      if (!isBearerToken && API_KEY) {
+        const separator = endpoint.includes('?') ? '&' : '?';
+        endpoint = `${endpoint}${separator}api_key=${encodeURIComponent(API_KEY)}`;
+      }
       const response = await fetch(endpoint, API_OPTIONS);
 
       if(!response.ok) {
