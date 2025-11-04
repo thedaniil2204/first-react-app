@@ -7,9 +7,7 @@ const API_BASE_URL = 'https://api.themoviedb.org/3';
 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
-// Поддержка двух вариантов авторизации TMDB:
-// - v4 токен (JWT) через заголовок Authorization: Bearer <token>
-// - v3 ключ через параметр ?api_key=...
+
 const isBearerToken = typeof API_KEY === 'string' && API_KEY.includes('.');
 
 const API_OPTIONS = {
@@ -48,7 +46,12 @@ const App = () => {
       const response = await fetch(endpoint, API_OPTIONS);
 
       if(!response.ok) {
-        throw new Error("Failed fetching movies");
+        let details = '';
+        try {
+          const errJson = await response.json();
+          details = errJson?.status_message || errJson?.message || '';
+        } catch {}
+        throw new Error(`Failed fetching movies${details ? `: ${details}` : ''}`);
       }
       const data = await response.json();
 
